@@ -1,0 +1,1974 @@
+<!DOCTYPE html>
+<html lang="hr" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AURA-ZEN // 2-Minute Meditation</title>
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Google Fonts: Inter & Ubuntu Mono -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Ubuntu+Mono:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+
+    <!-- Phosphor Icons -->
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+
+    <!-- Three.js & Tone.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
+
+    <style>
+        :root {
+            --orb-size: min(52vw, calc(100vh - 185px));
+            --sub-color: #f8fafc;
+            --sub-size: clamp(2.1rem, 3.48vw, 3.18rem);
+        }
+
+        @media (max-width: 1023px) {
+            :root {
+                --orb-size: min(78vw, calc(100vh - 310px));
+                --sub-size: clamp(1.68rem, 5.4vw, 2.46rem);
+            }
+        }
+
+        * {
+            box-sizing: border-box;
+            user-select: none;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Inter', sans-serif;
+            background:
+                radial-gradient(circle at 26% 42%, rgba(14, 165, 233, 0.12) 0%, rgba(8, 15, 30, 0.94) 52%, #030712 100%);
+            color: #f8fafc;
+            overflow: hidden;
+            height: 100vh;
+            width: 100vw;
+        }
+
+        /* Subtle background dot matrix */
+        .bg-grid {
+            background-image: radial-gradient(rgba(125, 211, 252, 0.09) 1px, transparent 1px);
+            background-size: 28px 28px;
+        }
+
+        /* Left Circular Android Portal */
+        .orb-portal {
+            width: var(--orb-size);
+            height: var(--orb-size);
+            min-width: 250px;
+            min-height: 250px;
+            max-width: 760px;
+            max-height: 760px;
+            border-radius: 9999px;
+            position: relative;
+            background: radial-gradient(circle at 50% 42%, rgba(15, 29, 52, 0.92) 0%, rgba(5, 10, 22, 0.98) 74%, rgba(2, 6, 15, 1) 100%);
+            box-shadow:
+                0 0 60px rgba(56, 189, 248, 0.16),
+                inset 0 0 42px rgba(56, 189, 248, 0.14),
+                0 0 0 1.5px rgba(125, 211, 252, 0.28);
+            overflow: hidden;
+            cursor: grab;
+        }
+
+        .orb-portal:active {
+            cursor: grabbing;
+        }
+
+        #canvas-container {
+            width: 100%;
+            height: 100%;
+            border-radius: 9999px;
+            overflow: hidden;
+        }
+
+        /* Breathing Halo Ring */
+        .breath-halo {
+            position: absolute;
+            inset: -14px;
+            border-radius: 9999px;
+            border: 1.5px solid rgba(56, 189, 248, 0.25);
+            pointer-events: none;
+            transition: transform 0.15s linear, border-color 0.4s ease, opacity 0.4s ease;
+        }
+
+        /* TV Subtitle Styling with gentle translucent backdrop and short fade transition */
+        #tv-subtitle-box {
+            background: rgba(6, 12, 24, 0.34);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            border: 1px solid rgba(148, 163, 184, 0.10);
+            color: var(--sub-color);
+            font-size: var(--sub-size);
+            line-height: 1.42;
+            letter-spacing: 0.01em;
+            text-shadow: 0 2px 12px rgba(0, 0, 0, 0.85);
+            opacity: 0;
+            transform: translateY(4px);
+            transition: opacity 180ms ease-in-out, transform 180ms ease-in-out, color 200ms ease, font-size 200ms ease;
+            pointer-events: none;
+        }
+
+        #tv-subtitle-box.sub-visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* Ubuntu GNOME Terminal Styling */
+        .ubuntu-terminal {
+            font-family: 'Ubuntu Mono', monospace;
+            background-color: rgba(48, 10, 36, 0.94);
+            border: 1px solid rgba(119, 41, 83, 0.75);
+            box-shadow: 0 14px 36px rgba(0, 0, 0, 0.65);
+        }
+
+        .ubuntu-titlebar {
+            background: linear-gradient(180deg, #3c3b37 0%, #2c2b29 100%);
+            border-bottom: 1px solid #1e1d1c;
+        }
+
+        .ubuntu-close-dot {
+            background-color: #e95420;
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.25);
+        }
+
+        .ubuntu-cursor {
+            display: inline-block;
+            width: 8px;
+            height: 14px;
+            background-color: #eeeeec;
+            vertical-align: middle;
+            animation: ubuntuBlink 1.05s steps(2, start) infinite;
+        }
+
+        @keyframes ubuntuBlink {
+            0%, 49% { opacity: 1; }
+            50%, 100% { opacity: 0; }
+        }
+
+        /* Equalizer voice bars */
+        .v-bar {
+            width: 3px;
+            border-radius: 999px;
+            background: #38bdf8;
+            transition: height 0.12s ease;
+        }
+
+        /* Custom scrollbar for terminal */
+        #terminal-log::-webkit-scrollbar {
+            width: 5px;
+        }
+        #terminal-log::-webkit-scrollbar-track {
+            background: rgba(25, 5, 20, 0.4);
+        }
+        #terminal-log::-webkit-scrollbar-thumb {
+            background: rgba(233, 84, 32, 0.55);
+            border-radius: 9999px;
+        }
+    </style>
+</head>
+<body class="bg-grid flex flex-col justify-between h-screen w-screen overflow-hidden select-none">
+
+    <!-- TOP CONTROL BAR -->
+    <header class="w-full px-4 sm:px-7 pt-3 pb-2 flex flex-wrap items-center justify-between gap-3 z-30">
+        <!-- Brand & Phase Status -->
+        <div class="flex items-center gap-3">
+            <div class="flex items-center gap-2 px-3 py-1.5 rounded-full bg-slate-900/75 border border-sky-400/25 backdrop-blur-md">
+                <span class="w-2 h-2 rounded-full bg-sky-400 animate-pulse"></span>
+                <span class="text-xs font-semibold tracking-widest text-sky-100">AURA-ZEN</span>
+                <span id="phase-badge" class="text-[11px] font-mono text-sky-300/85 border-l border-slate-700 pl-2">STANDBY // 02:00</span>
+            </div>
+
+            <!-- Voice Activity Bars -->
+            <div id="voice-bars" class="flex items-end gap-1 h-4 px-2 opacity-25 transition-opacity duration-300">
+                <span class="v-bar h-1.5" id="vb-1"></span>
+                <span class="v-bar h-3" id="vb-2"></span>
+                <span class="v-bar h-2" id="vb-3"></span>
+                <span class="v-bar h-3.5" id="vb-4"></span>
+                <span class="v-bar h-1.5" id="vb-5"></span>
+            </div>
+        </div>
+
+        <!-- Action Controls -->
+        <div class="flex items-center gap-2">
+            <!-- Microphone Permission / Status Button -->
+            <button id="btn-mic" onclick="handleMicButtonClick()"
+                class="flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-medium bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-200 border border-emerald-400/40 transition-all shadow-sm">
+                <i id="icon-mic" class="ph-fill ph-microphone text-sm text-emerald-300"></i>
+                <span id="label-mic">Allow Microphone</span>
+            </button>
+
+            <!-- Manual Start / Pause 2-Min Button -->
+            <button id="btn-play" onclick="toggleMeditationManual()"
+                class="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-medium bg-sky-500/15 hover:bg-sky-500/25 text-sky-100 border border-sky-400/30 transition-all">
+                <i id="icon-play" class="ph-fill ph-play text-xs text-sky-300"></i>
+                <span id="label-play">Start 2-Min</span>
+            </button>
+
+            <!-- Reset Button -->
+            <button onclick="resetMeditation()" title="Reset Session"
+                class="p-2 rounded-full bg-slate-900/75 hover:bg-slate-800 text-slate-300 border border-slate-700/70 transition-all">
+                <i class="ph ph-arrow-counter-clockwise text-sm"></i>
+            </button>
+
+            <!-- Sound Mute/Unmute -->
+            <button onclick="toggleSound()" title="Toggle Audio"
+                class="p-2 rounded-full bg-slate-900/75 hover:bg-slate-800 text-slate-300 border border-slate-700/70 transition-all">
+                <i id="icon-sound" class="ph-fill ph-speaker-high text-sm text-sky-300"></i>
+            </button>
+
+            <!-- Fullscreen Toggle -->
+            <button onclick="toggleFullScreen()" title="Full Screen"
+                class="p-2 rounded-full bg-slate-900/75 hover:bg-slate-800 text-slate-300 border border-slate-700/70 transition-all">
+                <i id="icon-fs" class="ph ph-corners-out text-sm"></i>
+            </button>
+        </div>
+    </header>
+
+    <!-- MAIN SPLIT STAGE: LEFT = 3D ANDROID ORB | RIGHT = CROATIAN TV SUBTITLES -->
+    <main class="flex-1 w-full max-w-[1800px] mx-auto px-4 sm:px-8 py-1 flex flex-col lg:flex-row items-center justify-center gap-6 lg:gap-12 min-h-0 z-20">
+
+        <!-- LEFT COLUMN: MAXIMIZED CIRCULAR PORTAL WITH 3D SHIMMERING VOXEL HEAD -->
+        <div class="flex flex-col items-center justify-center shrink-0">
+            <div class="relative flex items-center justify-center">
+                <!-- Outer Breathing Ring -->
+                <div id="breath-halo" class="breath-halo"></div>
+
+                <!-- SVG Orbital Progress Ring -->
+                <svg class="absolute -inset-2.5 w-[calc(100%+20px)] h-[calc(100%+20px)] -rotate-90 pointer-events-none" viewBox="0 0 200 200">
+                    <circle cx="100" cy="100" r="96" fill="none" stroke="rgba(56, 189, 248, 0.12)" stroke-width="2" />
+                    <circle id="progress-ring" cx="100" cy="100" r="96" fill="none" stroke="#38bdf8" stroke-width="2.6"
+                        stroke-linecap="round" stroke-dasharray="603.18" stroke-dashoffset="0"
+                        class="transition-all duration-300" />
+                </svg>
+
+                <!-- Circular Three.js Container -->
+                <div id="orb-portal" class="orb-portal">
+                    <div id="canvas-container"></div>
+
+                    <!-- Subtle HUD Overlay Inside Bottom of Circle -->
+                    <div class="absolute bottom-5 inset-x-0 flex flex-col items-center pointer-events-none">
+                        <span id="timer-display" class="text-xl sm:text-2xl font-light tracking-[0.22em] text-sky-100/90 drop-shadow">02:00</span>
+                        <span id="breath-instruction" class="text-[11px] sm:text-xs uppercase tracking-[0.24em] text-sky-300/75 mt-0.5">SAY "HI" TO BEGIN</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- RIGHT COLUMN: DEDICATED STAGE FOR CROATIAN TV SUBTITLES & VOICE-ACTIVATED SUBTITLE SPEC BAR -->
+        <section class="flex-1 w-full lg:max-w-5xl flex flex-col items-center lg:items-start justify-center min-h-[130px] lg:min-h-[320px] px-2">
+
+            <!-- TV Subtitle Display (Hidden initially; gentle translucent black backdrop; short fade in/out) -->
+            <div class="w-full flex items-center justify-center lg:justify-start min-h-[140px]">
+                <div id="tv-subtitle-box" class="px-8 py-5 rounded-2xl font-normal text-center lg:text-left max-w-5xl"></div>
+            </div>
+
+            <!-- Voice-Triggered Subtitle Customizer Bar (Hidden initially; opens on voice "Subtitles") -->
+            <div id="subtitle-spec-bar"
+                class="hidden mt-4 flex-wrap items-center gap-3 px-4 py-2.5 rounded-2xl bg-slate-900/80 border border-sky-400/25 backdrop-blur-md shadow-lg">
+                <span class="text-[11px] font-mono uppercase tracking-wider text-sky-300">Titlovi:</span>
+
+                <!-- Color Swatches -->
+                <div class="flex items-center gap-1.5">
+                    <button onclick="applySubtitleSettings('#f8fafc', null, true)" title="Bijela (White)"
+                        class="w-5 h-5 rounded-full bg-slate-50 border border-white/40 hover:scale-110 transition"></button>
+                    <button onclick="applySubtitleSettings('#fef3c7', null, true)" title="Topla krem (Cream)"
+                        class="w-5 h-5 rounded-full bg-amber-100 border border-white/30 hover:scale-110 transition"></button>
+                    <button onclick="applySubtitleSettings('#fde047', null, true)" title="TV Žuta (Yellow)"
+                        class="w-5 h-5 rounded-full bg-yellow-300 border border-white/30 hover:scale-110 transition"></button>
+                    <button onclick="applySubtitleSettings('#f472b6', null, true)" title="Ružičasta (Pink)"
+                        class="w-5 h-5 rounded-full bg-pink-400 border border-white/30 hover:scale-110 transition"></button>
+                    <button onclick="applySubtitleSettings('#c084fc', null, true)" title="Ljubičasta (Purple)"
+                        class="w-5 h-5 rounded-full bg-purple-400 border border-white/30 hover:scale-110 transition"></button>
+                    <button onclick="applySubtitleSettings('#67e8f9', null, true)" title="Cijan (Cyan)"
+                        class="w-5 h-5 rounded-full bg-cyan-300 border border-white/30 hover:scale-110 transition"></button>
+                    <button onclick="applySubtitleSettings('#6ee7b7', null, true)" title="Menta (Mint)"
+                        class="w-5 h-5 rounded-full bg-emerald-300 border border-white/30 hover:scale-110 transition"></button>
+                    <input type="color" id="custom-sub-color" value="#f8fafc"
+                        onchange="applySubtitleSettings(this.value, null, true)"
+                        class="w-5 h-5 rounded-full overflow-hidden cursor-pointer bg-transparent border-0 p-0" title="Vlastita boja" />
+                </div>
+
+                <span class="text-slate-600">|</span>
+
+                <!-- Size Buttons -->
+                <div class="flex items-center gap-1 text-xs font-mono">
+                    <button id="sub-sz-sm" onclick="applySubtitleSettings(null, 'sm', true)"
+                        class="px-2 py-0.5 rounded bg-slate-800 text-slate-300 hover:bg-slate-700 transition">S</button>
+                    <button id="sub-sz-md" onclick="applySubtitleSettings(null, 'md', true)"
+                        class="px-2 py-0.5 rounded bg-sky-500/30 text-sky-200 border border-sky-400/40 transition">M</button>
+                    <button id="sub-sz-lg" onclick="applySubtitleSettings(null, 'lg', true)"
+                        class="px-2 py-0.5 rounded bg-slate-800 text-slate-300 hover:bg-slate-700 transition">L</button>
+                    <button id="sub-sz-xl" onclick="applySubtitleSettings(null, 'xl', true)"
+                        class="px-2 py-0.5 rounded bg-slate-800 text-slate-300 hover:bg-slate-700 transition">XL</button>
+                </div>
+
+                <button onclick="closeSubtitleSpecBar()" title="Zatvori"
+                    class="ml-1 text-slate-400 hover:text-slate-200 p-1">
+                    <i class="ph ph-x text-xs"></i>
+                </button>
+            </div>
+
+            <!-- Minimal Quick Voice/Tap Chips when awaiting start confirmation -->
+            <div id="quick-start-chips" class="hidden mt-4 flex-wrap items-center gap-2">
+                <button onclick="simulateVoiceChip('Start now')"
+                    class="px-3.5 py-1.5 rounded-full text-xs bg-sky-500/15 hover:bg-sky-500/25 text-sky-200 border border-sky-400/30 transition">
+                    "Now"
+                </button>
+                <button onclick="simulateVoiceChip('In 5 seconds')"
+                    class="px-3.5 py-1.5 rounded-full text-xs bg-slate-800/80 hover:bg-slate-700/80 text-slate-300 border border-slate-600/40 transition">
+                    "In 5 seconds"
+                </button>
+            </div>
+        </section>
+    </main>
+
+    <!-- BOTTOM UBUNTU GNOME TERMINAL (Lower part of screen with gap above, read-only voice stream) -->
+    <footer class="w-full max-w-4xl mx-auto px-4 pb-3 sm:pb-4 pt-1 z-30 shrink-0">
+        <div class="ubuntu-terminal rounded-xl overflow-hidden">
+            <!-- Ubuntu Yaru Window Header -->
+            <div class="ubuntu-titlebar px-3.5 py-1.5 flex items-center justify-between text-[11px] text-stone-200">
+                <div class="flex items-center gap-2">
+                    <span class="w-3 h-3 rounded-full ubuntu-close-dot inline-flex items-center justify-center text-[8px] font-bold text-stone-900">×</span>
+                    <span class="w-2.5 h-2.5 rounded-full bg-stone-600 inline-block"></span>
+                    <span class="w-2.5 h-2.5 rounded-full bg-stone-600 inline-block"></span>
+                </div>
+                <div class="font-mono tracking-wide text-stone-200/90 truncate">
+                    aura@ubuntu: ~/asr-voice-stream
+                </div>
+                <div id="terminal-context-tag" class="font-mono text-[10px] text-amber-300/90">
+                    ttyASR0 // STANDBY
+                </div>
+            </div>
+
+            <!-- Ubuntu Terminal Output Body -->
+            <div class="px-4 py-2.5 text-xs leading-relaxed">
+                <div id="terminal-log" class="h-16 sm:h-20 overflow-y-auto space-y-0.5 pr-1 text-[#eeeeec]"></div>
+                <div class="mt-1 pt-1 border-t border-white/10 flex items-center gap-1.5 truncate">
+                    <span class="text-[#8ae234] font-bold">aura@ubuntu</span><span class="text-white">:</span><span class="text-[#729fcf] font-bold">~/asr</span><span class="text-white">$</span>
+                    <span id="terminal-live-stream" class="text-[#fce94f] truncate">waiting for microphone permission... (or type "test")</span>
+                    <span class="ubuntu-cursor"></span>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        /***********************************************************************
+         * 1. GLOBAL STATE & CONFIGURATION
+         ***********************************************************************/
+        const TOTAL_SECONDS = 120;
+        let remainingSeconds = TOTAL_SECONDS;
+        let isRunning = false;
+        let isCompleted = false;
+        let soundEnabled = true;
+
+        // Conversation & Subtitle Context
+        let checkInState = 'NONE'; // 'NONE' | 'ASK_WHEN_TO_START'
+        let lastConversationTopic = 'NONE'; // 'NONE' | 'SUBTITLES'
+        let savedCheckInStateBeforeSubtitles = 'NONE';
+        let isTransitioningToStart = false;
+        let isHandlingVoiceReply = false;
+        let isRobotSpeaking = false;
+        let isRunningDiagnosticsTest = false;
+        let delayedStartTimer = null;
+
+        // Subtitle State (Hidden at start!)
+        let subtitleColor = '#f8fafc';
+        let subtitleSizeKey = 'md';
+        const SUBTITLE_SIZE_MAP = {
+            sm: 'clamp(1.62rem, 2.52vw, 2.22rem)',
+            md: 'clamp(2.1rem, 3.48vw, 3.18rem)',
+            lg: 'clamp(2.58rem, 4.32vw, 4.02rem)',
+            xl: 'clamp(3.06rem, 5.28vw, 4.92rem)'
+        };
+        let subtitleFadeTimer = null;
+        let subtitlePreviewHideTimer = null;
+        let currentSubtitleText = '';
+
+        // Minimalist Meditation Cues (No midpoint question - pure uninterrupted guidance)
+        const MEDITATION_CUES = [
+            {
+                atRemaining: 115,
+                triggered: false,
+                en: "Gently close your eyes. Follow the slow rhythm of your breath.",
+                hr: "Nježno zatvorite oči. Pratite miran ritam svoga daha."
+            },
+            {
+                atRemaining: 62,
+                triggered: false,
+                en: "Softly let every thought pass, returning to each quiet breath.",
+                hr: "Pustite misli neka mirno prolaze i vratite pažnju na svaki tihi dah."
+            },
+            {
+                atRemaining: 20,
+                triggered: false,
+                en: "Take one more deep, slow breath in... and let the body soften.",
+                hr: "Udahnite još jednom duboko i polako... i opustite cijelo tijelo."
+            }
+        ];
+
+        /***********************************************************************
+         * 2. UBUNTU TERMINAL LOGGER & KEYBOARD "test" SHORTCUT
+         ***********************************************************************/
+        function logVoiceTerminal(tag, message, tone = 'info') {
+            const logEl = document.getElementById('terminal-log');
+            if (!logEl) return;
+
+            const now = new Date();
+            const ts = now.toTimeString().split(' ')[0];
+            const colorMap = {
+                info: 'text-[#eeeeec]',
+                cmd: 'text-[#8ae234]',
+                cyan: 'text-[#34e2e2]',
+                amber: 'text-[#fce94f]',
+                pink: 'text-[#ad7fa8]',
+                warn: 'text-[#fcaf3e]'
+            };
+
+            const line = document.createElement('div');
+            line.className = 'truncate';
+            line.innerHTML = `<span class="text-stone-400">[${ts}]</span> <span class="${colorMap[tone] || colorMap.info} font-bold">[${tag}]</span> <span>${escapeHtml(message)}</span>`;
+            logEl.appendChild(line);
+
+            while (logEl.children.length > 28) {
+                logEl.removeChild(logEl.firstChild);
+            }
+            logEl.scrollTop = logEl.scrollHeight;
+        }
+
+        function setTerminalPromptStream(text) {
+            const el = document.getElementById('terminal-live-stream');
+            if (el) el.textContent = text;
+        }
+
+        function setTerminalContextBadge(label) {
+            const badge = document.getElementById('terminal-context-tag');
+            if (badge) badge.textContent = `ttyASR0 // ${label}`;
+        }
+
+        function escapeHtml(str) {
+            return String(str)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;');
+        }
+
+        // Hidden keyboard listener so typing "test" works anytime during standby without an input box
+        let typedKeyBuffer = '';
+        let typedKeyResetTimer = null;
+        window.addEventListener('keydown', (e) => {
+            if (e.ctrlKey || e.metaKey || e.altKey) return;
+            if (e.key && e.key.length === 1) {
+                typedKeyBuffer = (typedKeyBuffer + e.key.toLowerCase()).slice(-8);
+                if (typedKeyResetTimer) clearTimeout(typedKeyResetTimer);
+                typedKeyResetTimer = setTimeout(() => { typedKeyBuffer = ''; }, 2200);
+
+                if (typedKeyBuffer.endsWith('test') && !isRunning && !isRunningDiagnosticsTest) {
+                    typedKeyBuffer = '';
+                    initZenAudio().then(() => runSystemDiagnosticsTest());
+                }
+            }
+        });
+
+        /***********************************************************************
+         * 3. SUBTITLE ENGINE (SMOOTH SHORT FADE IN / FADE OUT + VOICE SPECS)
+         ***********************************************************************/
+        function showSubtitleText(newText, autoHideMs = 0) {
+            const box = document.getElementById('tv-subtitle-box');
+            if (!box) return;
+
+            if (subtitleFadeTimer) {
+                clearTimeout(subtitleFadeTimer);
+                subtitleFadeTimer = null;
+            }
+            if (subtitlePreviewHideTimer) {
+                clearTimeout(subtitlePreviewHideTimer);
+                subtitlePreviewHideTimer = null;
+            }
+
+            const clean = (newText || '').trim();
+
+            // Fade out if empty
+            if (!clean) {
+                box.classList.remove('sub-visible');
+                subtitleFadeTimer = setTimeout(() => {
+                    currentSubtitleText = '';
+                    box.textContent = '';
+                }, 185);
+                return;
+            }
+
+            // If same text is already visible, keep steady (e.g., when changing color/size)
+            if (box.classList.contains('sub-visible') && currentSubtitleText === clean) {
+                if (autoHideMs > 0) {
+                    subtitlePreviewHideTimer = setTimeout(() => showSubtitleText(''), autoHideMs);
+                }
+                return;
+            }
+
+            // If visible with different text, do short fade-out then fade-in
+            if (box.classList.contains('sub-visible') && currentSubtitleText !== '') {
+                box.classList.remove('sub-visible');
+                subtitleFadeTimer = setTimeout(() => {
+                    currentSubtitleText = clean;
+                    box.textContent = clean;
+                    box.classList.add('sub-visible');
+                    if (autoHideMs > 0) {
+                        subtitlePreviewHideTimer = setTimeout(() => showSubtitleText(''), autoHideMs);
+                    }
+                }, 180);
+            } else {
+                currentSubtitleText = clean;
+                box.textContent = clean;
+                requestAnimationFrame(() => {
+                    box.classList.add('sub-visible');
+                });
+                if (autoHideMs > 0) {
+                    subtitlePreviewHideTimer = setTimeout(() => showSubtitleText(''), autoHideMs);
+                }
+            }
+        }
+
+        function applySubtitleSettings(colorHex = null, sizeKey = null, showSamplePreview = false) {
+            if (colorHex) {
+                subtitleColor = colorHex;
+                document.documentElement.style.setProperty('--sub-color', subtitleColor);
+                const picker = document.getElementById('custom-sub-color');
+                if (picker && /^#[0-9a-f]{6}$/i.test(colorHex)) {
+                    picker.value = colorHex;
+                }
+            }
+
+            if (sizeKey && SUBTITLE_SIZE_MAP[sizeKey]) {
+                subtitleSizeKey = sizeKey;
+                document.documentElement.style.setProperty('--sub-size', SUBTITLE_SIZE_MAP[sizeKey]);
+                ['sm', 'md', 'lg', 'xl'].forEach((k) => {
+                    const btn = document.getElementById(`sub-sz-${k}`);
+                    if (!btn) return;
+                    if (k === sizeKey) {
+                        btn.className = 'px-2 py-0.5 rounded bg-sky-500/30 text-sky-200 border border-sky-400/40 transition';
+                    } else {
+                        btn.className = 'px-2 py-0.5 rounded bg-slate-800 text-slate-300 hover:bg-slate-700 transition';
+                    }
+                });
+            }
+
+            logVoiceTerminal('SUB_CFG', `color=${subtitleColor}, size=${subtitleSizeKey.toUpperCase()}`, 'pink');
+
+            if (showSamplePreview && !isRunning) {
+                // Only display the Croatian visual example — do not translate technical voice commands
+                showSubtitleText('Evo, ovako će izgledati veličina i boja.', 4200);
+            }
+        }
+
+        function openSubtitleSpecBar(showPreview = true) {
+            const bar = document.getElementById('subtitle-spec-bar');
+            const chips = document.getElementById('quick-start-chips');
+            if (chips) chips.classList.add('hidden');
+            if (bar) {
+                bar.classList.remove('hidden');
+                bar.classList.add('flex');
+            }
+            if (lastConversationTopic !== 'SUBTITLES') {
+                savedCheckInStateBeforeSubtitles = checkInState;
+            }
+            lastConversationTopic = 'SUBTITLES';
+            setTerminalContextBadge('SUBTITLES');
+            if (showPreview && !isRunning) {
+                showSubtitleText('Evo, ovako će izgledati veličina i boja.', 4500);
+            }
+        }
+
+        function closeSubtitleSpecBar() {
+            const bar = document.getElementById('subtitle-spec-bar');
+            if (bar) {
+                bar.classList.add('hidden');
+                bar.classList.remove('flex');
+            }
+            if (lastConversationTopic === 'SUBTITLES') {
+                lastConversationTopic = 'NONE';
+                if (savedCheckInStateBeforeSubtitles === 'ASK_WHEN_TO_START' && !isRunning) {
+                    checkInState = 'ASK_WHEN_TO_START';
+                    const chips = document.getElementById('quick-start-chips');
+                    if (chips) {
+                        chips.classList.remove('hidden');
+                        chips.classList.add('flex');
+                    }
+                    setTerminalContextBadge('AWAIT_START');
+                } else {
+                    setTerminalContextBadge(isRunning ? 'MEDITATION' : 'READY');
+                }
+            }
+            if (!isRunning && !isRobotSpeaking) {
+                showSubtitleText('');
+            }
+        }
+
+        /***********************************************************************
+         * 4. ZEN AUDIO (TONE.JS SINGING BOWLS & WARM AMBIENT DRONE)
+         ***********************************************************************/
+        let audioReady = false;
+        let bowlSynth = null;
+        let padSynth = null;
+        let masterReverb = null;
+
+        async function initZenAudio() {
+            if (audioReady) return;
+            try {
+                await Tone.start();
+                masterReverb = new Tone.Reverb({ decay: 5.5, wet: 0.55 }).toDestination();
+                await masterReverb.generate();
+
+                bowlSynth = new Tone.PolySynth(Tone.Synth, {
+                    oscillator: { type: 'sine' },
+                    envelope: { attack: 0.08, decay: 2.4, sustain: 0.1, release: 3.8 }
+                }).connect(masterReverb);
+                bowlSynth.volume.value = -12;
+
+                padSynth = new Tone.PolySynth(Tone.Synth, {
+                    oscillator: { type: 'triangle' },
+                    envelope: { attack: 2.5, decay: 1.5, sustain: 0.8, release: 4.0 }
+                }).connect(masterReverb);
+                padSynth.volume.value = -24;
+
+                audioReady = true;
+            } catch (err) {
+                console.warn('Audio init warning:', err);
+            }
+        }
+
+        function playBowlChime(note = 'C5') {
+            if (!soundEnabled || !audioReady || !bowlSynth) return;
+            try {
+                bowlSynth.triggerAttackRelease(note, '2n');
+            } catch (e) {}
+        }
+
+        function startAmbientPad() {
+            if (!soundEnabled || !audioReady || !padSynth) return;
+            try {
+                padSynth.triggerAttack(['C3', 'G3', 'E4']);
+            } catch (e) {}
+        }
+
+        function stopAmbientPad() {
+            if (!padSynth) return;
+            try {
+                padSynth.releaseAll();
+            } catch (e) {}
+        }
+
+        /***********************************************************************
+         * 5. HIGH-QUALITY NATURAL VOICE SYNTHESIZER WITH PRE-MEDITATION SLOWDOWN
+         ***********************************************************************/
+        let availableVoices = [];
+        let recentRobotUtterances = [];
+        let micIgnoreUntil = 0;
+        let activePreDelayTimer = null;
+        let activePostDelayTimer = null;
+        let speechFallbackTimer = null;
+
+        // Pace profiles: gently slows down right before meditation starts
+        const VOICE_PACE_PROFILES = {
+            calm:           { rate: 0.90, pitch: 1.00 },
+            pre_meditation: { rate: 0.79, pitch: 0.96 }, // Gently slower & calmer right before meditation
+            meditation:     { rate: 0.82, pitch: 0.96 }
+        };
+
+        function loadBrowserVoices() {
+            if (!('speechSynthesis' in window)) return;
+            availableVoices = window.speechSynthesis.getVoices() || [];
+        }
+
+        if ('speechSynthesis' in window) {
+            loadBrowserVoices();
+            window.speechSynthesis.onvoiceschanged = loadBrowserVoices;
+        }
+
+        function selectBestNaturalVoice() {
+            if (!('speechSynthesis' in window)) return null;
+            if (!availableVoices.length) {
+                availableVoices = window.speechSynthesis.getVoices() || [];
+            }
+            const enVoices = availableVoices.filter(v => v.lang && v.lang.toLowerCase().startsWith('en'));
+            if (!enVoices.length) return availableVoices[0] || null;
+
+            const scoreVoice = (v) => {
+                let s = 0;
+                const name = v.name || '';
+                // Strongly prefer modern Neural / Natural / Online / Enhanced voices
+                if (/Natural|Neural|Online/i.test(name)) s += 65;
+                if (/Premium|Enhanced|Studio|Siri/i.test(name)) s += 45;
+                if (/Aria|Jenny|Ava|Sonia|Libby|Samantha|Serena|Karen|Moira|Google UK English Female|Google US English/i.test(name)) s += 30;
+                if (!v.localService) s += 15; // Cloud/neural voices in Chrome/Edge
+                if (/en-GB|en-US/i.test(v.lang)) s += 10;
+                if (/Compact|espeak|Festival/i.test(name)) s -= 40;
+                return s;
+            };
+
+            return enVoices.slice().sort((a, b) => scoreVoice(b) - scoreVoice(a))[0];
+        }
+
+        function normalizeSpeechText(str) {
+            return (str || '')
+                .toLowerCase()
+                .replace(/[^a-z0-9\s]/g, ' ')
+                .replace(/\s+/g, ' ')
+                .trim();
+        }
+
+        function recordRobotUtterance(text) {
+            const norm = normalizeSpeechText(text);
+            if (!norm) return;
+            recentRobotUtterances.push({ norm, time: performance.now() });
+            if (recentRobotUtterances.length > 6) {
+                recentRobotUtterances.shift();
+            }
+        }
+
+        function isEchoOfRobotSpeech(candidateText) {
+            const cand = normalizeSpeechText(candidateText);
+            if (!cand) return true;
+
+            // Block Aura's own phrases from triggering loops through speakers
+            if (/\b(preview updated|settings saved|diagnostic|audio check|relax your shoulders|when can i start|beginning now|session complete|gently open your eyes)\b/i.test(cand)) {
+                return true;
+            }
+
+            const now = performance.now();
+            const candWords = cand.split(' ').filter(w => w.length > 2);
+
+            for (const item of recentRobotUtterances) {
+                if (now - item.time > 14000) continue;
+                if (item.norm.includes(cand) || cand.includes(item.norm)) return true;
+                if (candWords.length >= 2) {
+                    const rSet = new Set(item.norm.split(' '));
+                    const hit = candWords.filter(w => rSet.has(w)).length;
+                    if (hit / candWords.length >= 0.6) return true;
+                }
+            }
+            return false;
+        }
+
+        /**
+         * Speaks an English line with natural voice selection, optional Croatian TV subtitle
+         * (null = keep current or hide, '' = fallback to English), and pace profile.
+         */
+        function speakMeditationLine(englishText, onComplete = null, preDelayMs = 350, postDelayMs = 550, croatianSubtitle = '', paceMode = 'calm') {
+            if (activePreDelayTimer) clearTimeout(activePreDelayTimer);
+            if (activePostDelayTimer) clearTimeout(activePostDelayTimer);
+            if (speechFallbackTimer) clearTimeout(speechFallbackTimer);
+
+            const voiceBars = document.getElementById('voice-bars');
+            const profile = VOICE_PACE_PROFILES[paceMode] || VOICE_PACE_PROFILES.calm;
+
+            activePreDelayTimer = setTimeout(() => {
+                isRobotSpeaking = true;
+                recordRobotUtterance(englishText);
+                updateMicUI();
+
+                if (voiceBars) voiceBars.classList.remove('opacity-25');
+
+                // Subtitle handling:
+                // - 'KEEP_CURRENT' leaves sample preview untouched
+                // - null hides subtitle
+                // - string displays Croatian translation
+                if (croatianSubtitle === 'KEEP_CURRENT') {
+                    // Keep sample preview visible
+                } else if (croatianSubtitle === null) {
+                    showSubtitleText('');
+                } else {
+                    showSubtitleText(croatianSubtitle || englishText);
+                }
+
+                let finished = false;
+                const finishSpeech = () => {
+                    if (finished) return;
+                    finished = true;
+                    isRobotSpeaking = false;
+                    micIgnoreUntil = performance.now() + 1450;
+                    if (voiceBars) voiceBars.classList.add('opacity-25');
+
+                    activePostDelayTimer = setTimeout(() => {
+                        updateMicUI();
+                        if (typeof onComplete === 'function') onComplete();
+                    }, postDelayMs);
+                };
+
+                const wordCount = englishText.trim().split(/\s+/).length;
+                const estMs = Math.max(3200, Math.round((wordCount / (1.8 * profile.rate)) * 1000) + 2200);
+                speechFallbackTimer = setTimeout(() => {
+                    if ('speechSynthesis' in window && window.speechSynthesis.speaking) {
+                        speechFallbackTimer = setTimeout(finishSpeech, 1500);
+                        return;
+                    }
+                    finishSpeech();
+                }, estMs);
+
+                if (!soundEnabled || !('speechSynthesis' in window)) {
+                    logVoiceTerminal('AURA_MUTED', `"${englishText}"`, 'cyan');
+                    return;
+                }
+
+                try {
+                    if (window.speechSynthesis.speaking || window.speechSynthesis.pending) {
+                        window.speechSynthesis.cancel();
+                    }
+
+                    const utter = new SpeechSynthesisUtterance(englishText);
+                    utter.lang = 'en-US';
+                    utter.rate = profile.rate;
+                    utter.pitch = profile.pitch;
+
+                    const voice = selectBestNaturalVoice();
+                    if (voice) utter.voice = voice;
+
+                    logVoiceTerminal('AURA_TTS', `"${englishText}" [pace=${paceMode}, rate=${profile.rate}]`, 'cyan');
+
+                    utter.onend = () => {
+                        if (speechFallbackTimer) clearTimeout(speechFallbackTimer);
+                        finishSpeech();
+                    };
+                    utter.onerror = () => {
+                        if (speechFallbackTimer) clearTimeout(speechFallbackTimer);
+                        finishSpeech();
+                    };
+
+                    window.speechSynthesis.speak(utter);
+                } catch (err) {
+                    finishSpeech();
+                }
+            }, preDelayMs);
+        }
+
+        /***********************************************************************
+         * 6. DIAGNOSTIC "TEST" ROUTINE (AUDIO + SUBTITLE COLORS & SIZES)
+         ***********************************************************************/
+        async function runSystemDiagnosticsTest() {
+            if (isRunning || isRunningDiagnosticsTest) return;
+            isRunningDiagnosticsTest = true;
+            setTerminalContextBadge('DIAG_TEST');
+
+            const origColor = subtitleColor;
+            const origSize = subtitleSizeKey;
+
+            logVoiceTerminal('DIAG_INIT', 'starting audio & subtitle calibration test...', 'amber');
+            await initZenAudio();
+
+            // 1. Bowl chime triad test
+            playBowlChime('C5');
+            setTimeout(() => playBowlChime('E5'), 280);
+            setTimeout(() => playBowlChime('G5'), 560);
+            logVoiceTerminal('AUDIO_CHK', 'crystal singing bowls C5-E5-G5 -> OK', 'cmd');
+
+            // 2. Voice + Subtitle size & color sweep
+            speakMeditationLine(
+                'Diagnostic check active.',
+                null,
+                150,
+                300,
+                'Test sustava: provjera zvuka, boja i veličina titlova.',
+                'calm'
+            );
+
+            const steps = [
+                { delay: 900,  color: '#67e8f9', size: 'sm', label: 'Test titlova [S · Cijan] — glatki prijelaz.' },
+                { delay: 2200, color: '#fde047', size: 'md', label: 'Test titlova [M · TV Žuta] — čitljivost u redu.' },
+                { delay: 3500, color: '#f472b6', size: 'lg', label: 'Test titlova [L · Ružičasta] — kontrast u redu.' },
+                { delay: 4800, color: '#6ee7b7', size: 'xl', label: 'Test titlova [XL · Menta] — maksimalna veličina.' }
+            ];
+
+            steps.forEach((st) => {
+                setTimeout(() => {
+                    applySubtitleSettings(st.color, st.size, false);
+                    showSubtitleText(st.label);
+                    logVoiceTerminal('SUB_CHK', `size=${st.size.toUpperCase()} color=${st.color} -> OK`, 'pink');
+                }, st.delay);
+            });
+
+            setTimeout(() => {
+                applySubtitleSettings(origColor, origSize, false);
+                showSubtitleText('');
+                isRunningDiagnosticsTest = false;
+                setTerminalContextBadge(micPermissionGranted ? 'READY' : 'STANDBY');
+                logVoiceTerminal('DIAG_PASS', 'all systems nominal -> settings restored, waiting for "Hi"', 'cmd');
+            }, 6400);
+        }
+
+        /***********************************************************************
+         * 7. VOICE RECOGNITION (SINGLE PERMISSION UNLOCK, NO LOOP, CONTEXT AWARE)
+         ***********************************************************************/
+        let speechRecognizer = null;
+        let micPermissionGranted = false;
+        let micListeningPaused = false;
+        let isListeningForCommand = false;
+        let silenceWaitTimer = null;
+        let accumulatedTranscript = '';
+
+        function updateMicUI() {
+            const btn = document.getElementById('btn-mic');
+            const icon = document.getElementById('icon-mic');
+            const label = document.getElementById('label-mic');
+            if (!btn || !icon || !label) return;
+
+            if (!micPermissionGranted) {
+                btn.className = 'flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-medium bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-200 border border-emerald-400/40 transition-all shadow-sm';
+                icon.className = 'ph-fill ph-microphone text-sm text-emerald-300';
+                label.textContent = 'Allow Microphone';
+                return;
+            }
+
+            if (micListeningPaused) {
+                btn.className = 'flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-medium bg-slate-800/90 hover:bg-slate-700/90 text-amber-200 border border-amber-400/35 transition-all';
+                icon.className = 'ph-fill ph-microphone-slash text-sm text-amber-300';
+                label.textContent = 'Resume Listening';
+                return;
+            }
+
+            if (isRobotSpeaking) {
+                btn.className = 'flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-medium bg-sky-500/20 text-sky-200 border border-sky-400/35 transition-all';
+                icon.className = 'ph-fill ph-waveform text-sm text-sky-300';
+                label.textContent = 'Aura Speaking...';
+                return;
+            }
+
+            if (lastConversationTopic === 'SUBTITLES') {
+                btn.className = 'flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-medium bg-pink-500/20 text-pink-200 border border-pink-400/40 transition-all';
+                icon.className = 'ph-fill ph-subtitles text-sm text-pink-300';
+                label.textContent = 'Subtitle Voice Mode';
+                return;
+            }
+
+            btn.className = 'flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-medium bg-slate-800/80 text-emerald-300 border border-emerald-400/30 transition-all';
+            icon.className = 'ph-fill ph-microphone text-sm text-emerald-400';
+            label.textContent = isListeningForCommand ? 'Listening...' : 'Mic Ready';
+        }
+
+        function stopListeningAndExit(viaVoice = true) {
+            micListeningPaused = true;
+            isListeningForCommand = false;
+            accumulatedTranscript = '';
+
+            if (silenceWaitTimer) {
+                clearTimeout(silenceWaitTimer);
+                silenceWaitTimer = null;
+            }
+
+            if (speechRecognizer) {
+                try { speechRecognizer.stop(); } catch (e) {}
+            }
+
+            // Cleanly exit any active meditation, countdown, or open menus
+            isRunning = false;
+            isCompleted = false;
+            isTransitioningToStart = false;
+            isHandlingVoiceReply = false;
+            checkInState = 'NONE';
+            lastConversationTopic = 'NONE';
+            remainingSeconds = TOTAL_SECONDS;
+
+            clearDelayedStart();
+            stopAmbientPad();
+            MEDITATION_CUES.forEach(c => { c.triggered = false; });
+
+            closeSubtitleSpecBar();
+            const chips = document.getElementById('quick-start-chips');
+            if (chips) chips.classList.add('hidden');
+
+            updateTimerUI(TOTAL_SECONDS);
+
+            const labelPlay = document.getElementById('label-play');
+            const iconPlay = document.getElementById('icon-play');
+            const instr = document.getElementById('breath-instruction');
+            const badge = document.getElementById('phase-badge');
+            if (labelPlay) labelPlay.textContent = 'Start 2-Min';
+            if (iconPlay) iconPlay.className = 'ph-fill ph-play text-xs text-sky-300';
+            if (instr) instr.textContent = 'LISTENING STOPPED';
+            if (badge) badge.textContent = 'EXITED // 02:00';
+
+            playBowlChime('E5');
+            setTimeout(() => playBowlChime('C5'), 260);
+
+            setTerminalContextBadge('EXITED');
+            setTerminalPromptStream('voice stream closed // click "Resume Listening" to reactivate');
+            logVoiceTerminal('EXIT', 'stopped listening -> session exited cleanly', 'amber');
+            updateMicUI();
+
+            if (viaVoice) {
+                speakMeditationLine(
+                    'Listening stopped.',
+                    () => {
+                        setTimeout(() => {
+                            if (!isRunning && !isRobotSpeaking) showSubtitleText('');
+                        }, 1600);
+                    },
+                    150,
+                    350,
+                    'Slušanje je zaustavljeno.',
+                    'calm'
+                );
+            } else {
+                showSubtitleText('Slušanje je zaustavljeno.', 2000);
+            }
+        }
+
+        function buildSpeechRecognizer() {
+            const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
+            if (!SpeechRec) return null;
+
+            const rec = new SpeechRec();
+            rec.lang = 'en-US';
+            rec.continuous = true;
+            rec.interimResults = true;
+            rec.maxAlternatives = 1;
+
+            rec.onstart = () => {
+                isListeningForCommand = true;
+                micPermissionGranted = true;
+                updateMicUI();
+                if (!isRunning) {
+                    setTerminalPromptStream(checkInState === 'ASK_WHEN_TO_START' ? 'listening for "Now"...' : 'listening for "Hi"...');
+                }
+            };
+
+            rec.onresult = (event) => {
+                if (isRobotSpeaking || isHandlingVoiceReply || isRunningDiagnosticsTest || isTransitioningToStart || performance.now() < micIgnoreUntil) {
+                    accumulatedTranscript = '';
+                    if (silenceWaitTimer) {
+                        clearTimeout(silenceWaitTimer);
+                        silenceWaitTimer = null;
+                    }
+                    return;
+                }
+
+                let interim = '';
+                let finalChunk = '';
+
+                for (let i = event.resultIndex; i < event.results.length; i++) {
+                    const txt = event.results[i][0].transcript;
+                    if (event.results[i].isFinal) {
+                        finalChunk += ' ' + txt;
+                    } else {
+                        interim += txt;
+                    }
+                }
+
+                if (finalChunk.trim()) {
+                    accumulatedTranscript = (accumulatedTranscript + ' ' + finalChunk).trim();
+                }
+
+                const livePreview = (accumulatedTranscript + ' ' + interim).trim();
+                if (livePreview) {
+                    setTerminalPromptStream(`rx_stream >> "${livePreview}"`);
+                }
+
+                if (silenceWaitTimer) clearTimeout(silenceWaitTimer);
+                silenceWaitTimer = setTimeout(() => {
+                    const finalPhrase = (accumulatedTranscript || livePreview).trim();
+                    accumulatedTranscript = '';
+                    if (finalPhrase) {
+                        processVoiceCommand(finalPhrase);
+                    }
+                }, finalChunk.trim() ? 380 : 950);
+            };
+
+            rec.onerror = (event) => {
+                if (event.error === 'not-allowed' || event.error === 'service-not-allowed') {
+                    // Stop cleanly — NEVER loop permission requests!
+                    micPermissionGranted = false;
+                    isListeningForCommand = false;
+                    updateMicUI();
+                    logVoiceTerminal('MIC_LOCKED', 'click "Allow Microphone" in top bar to enable voice', 'warn');
+                    setTerminalPromptStream('click "Allow Microphone" to start...');
+                }
+            };
+
+            rec.onend = () => {
+                isListeningForCommand = false;
+                updateMicUI();
+                // Only auto-resume within the same session if permission was granted and user hasn't said "Stop listening"
+                if (micPermissionGranted && !micListeningPaused) {
+                    setTimeout(() => {
+                        if (micPermissionGranted && !micListeningPaused && !isListeningForCommand) {
+                            try { rec.start(); } catch (e) {}
+                        }
+                    }, 350);
+                }
+            };
+
+            return rec;
+        }
+
+        async function handleMicButtonClick() {
+            await initZenAudio();
+            loadBrowserVoices();
+
+            if (!speechRecognizer) {
+                speechRecognizer = buildSpeechRecognizer();
+            }
+
+            if (!speechRecognizer) {
+                logVoiceTerminal('ASR_UNSUP', 'Web Speech API unavailable -> use top buttons', 'warn');
+                return;
+            }
+
+            if (isListeningForCommand && !micListeningPaused) {
+                stopListeningAndExit(false);
+                return;
+            }
+
+            try {
+                micListeningPaused = false;
+                speechRecognizer.start();
+                micPermissionGranted = true;
+                const instr = document.getElementById('breath-instruction');
+                const badge = document.getElementById('phase-badge');
+                if (!isRunning) {
+                    if (instr) instr.textContent = 'SAY "HI" TO BEGIN';
+                    if (badge) badge.textContent = 'STANDBY // 02:00';
+                }
+                logVoiceTerminal('MIC_OK', 'microphone active -> say "Hi" (or "Stop listening" to exit)', 'cmd');
+                setTerminalContextBadge('READY');
+                updateMicUI();
+            } catch (err) {
+                logVoiceTerminal('MIC_WAIT', 'ready -> say "Hi"', 'amber');
+            }
+        }
+
+        // Smart startup check: if browser already persisted permission, start automatically; otherwise wait calmly for 1 click (NO LOOP)
+        async function bootMicrophoneOnLoad() {
+            logVoiceTerminal('BOOT', 'AURA-ZEN 3D voxel engine initialized', 'info');
+            logVoiceTerminal('HINT', 'click "Allow Microphone" then say "Hi" (or type "test")', 'amber');
+
+            if (navigator.permissions && navigator.permissions.query) {
+                try {
+                    const status = await navigator.permissions.query({ name: 'microphone' });
+                    if (status.state === 'granted') {
+                        speechRecognizer = buildSpeechRecognizer();
+                        if (speechRecognizer) {
+                            try {
+                                speechRecognizer.start();
+                                micPermissionGranted = true;
+                                logVoiceTerminal('MIC_AUTO', 'persisted microphone permission detected -> listening for "Hi"', 'cmd');
+                                setTerminalContextBadge('READY');
+                                updateMicUI();
+                            } catch (e) {}
+                        }
+                    }
+                } catch (e) {}
+            }
+        }
+
+        /***********************************************************************
+         * 8. NATURAL LANGUAGE PARSER (MINIMALIST DIALOG + SUBTITLE PRONOUN CONTEXT)
+         ***********************************************************************/
+        function parseSubtitleIntent(norm) {
+            const colorKeywords = {
+                white: '#f8fafc',
+                cream: '#fef3c7',
+                warm: '#fef3c7',
+                yellow: '#fde047',
+                gold: '#fde047',
+                pink: '#f472b6',
+                rose: '#f472b6',
+                magenta: '#f472b6',
+                purple: '#c084fc',
+                violet: '#c084fc',
+                cyan: '#67e8f9',
+                blue: '#67e8f9',
+                aqua: '#67e8f9',
+                mint: '#6ee7b7',
+                green: '#6ee7b7',
+                orange: '#fb923c',
+                red: '#f87171'
+            };
+
+            let detectedColor = null;
+            for (const [word, hex] of Object.entries(colorKeywords)) {
+                if (new RegExp(`\\b${word}\\b`, 'i').test(norm)) {
+                    detectedColor = hex;
+                    break;
+                }
+            }
+
+            let detectedSize = null;
+            if (/\b(extra large|xl|huge|biggest|very big|largest)\b/i.test(norm)) {
+                detectedSize = 'xl';
+            } else if (/\b(large|big)\b/i.test(norm)) {
+                detectedSize = 'lg';
+            } else if (/\b(medium|normal|default|standard)\b/i.test(norm)) {
+                detectedSize = 'md';
+            } else if (/\b(small|tiny|little)\b/i.test(norm)) {
+                detectedSize = 'sm';
+            } else if (/\b(bigger|larger|increase)\b/i.test(norm)) {
+                const order = ['sm', 'md', 'lg', 'xl'];
+                const idx = Math.min(order.length - 1, order.indexOf(subtitleSizeKey) + 1);
+                detectedSize = order[idx];
+            } else if (/\b(smaller|decrease)\b/i.test(norm)) {
+                const order = ['sm', 'md', 'lg', 'xl'];
+                const idx = Math.max(0, order.indexOf(subtitleSizeKey) - 1);
+                detectedSize = order[idx];
+            }
+
+            const mentionsSubtitleWord = /\b(subtitle|subtitles|caption|captions|text|font)\b/i.test(norm);
+            const mentionsPronounFollowUp = (lastConversationTopic === 'SUBTITLES') && (
+                /\b(them|it|color|colour|size)\b/i.test(norm) || Boolean(detectedColor) || Boolean(detectedSize)
+            );
+            const wantsCloseSubtitles = (lastConversationTopic === 'SUBTITLES') && /\b(done|close|save|ok|okay|finish)\b/i.test(norm) && !detectedColor && !detectedSize;
+
+            return {
+                isSubtitleCommand: mentionsSubtitleWord || mentionsPronounFollowUp || wantsCloseSubtitles,
+                wantsCloseSubtitles,
+                detectedColor,
+                detectedSize
+            };
+        }
+
+        function simulateVoiceChip(phrase) {
+            initZenAudio().then(() => processVoiceCommand(phrase));
+        }
+
+        function processVoiceCommand(rawPhrase) {
+            const norm = normalizeSpeechText(rawPhrase);
+            if (!norm) return;
+
+            if (isEchoOfRobotSpeech(norm)) {
+                return;
+            }
+
+            logVoiceTerminal('VOICE_CMD', `"${rawPhrase}"`, 'cmd');
+
+            // 0. "Stop listening" command to cleanly exit voice listening & session from any state
+            if (/\b(stop listening|exit|quit|goodbye|bye)\b/i.test(norm)) {
+                stopListeningAndExit(true);
+                return;
+            }
+
+            // 1. Diagnostic "test" voice trigger (works before session starts)
+            if (!isRunning && /\b(test|testing|diagnostics)\b/i.test(norm)) {
+                runSystemDiagnosticsTest();
+                return;
+            }
+
+            // 2. Global Reset / Stop commands
+            if (/\b(reset|restart|stop meditation)\b/i.test(norm)) {
+                resetMeditation();
+                return;
+            }
+
+            // 3. Subtitle Voice Customization (including follow-ups like "make them pink")
+            const subIntent = parseSubtitleIntent(norm);
+            if (!isRunning && subIntent.isSubtitleCommand) {
+                if (subIntent.wantsCloseSubtitles) {
+                    closeSubtitleSpecBar();
+                    speakMeditationLine('Settings saved.', null, 150, 400, null, 'calm');
+                    return;
+                }
+
+                openSubtitleSpecBar(true);
+                if (subIntent.detectedColor || subIntent.detectedSize) {
+                    applySubtitleSettings(subIntent.detectedColor, subIntent.detectedSize, true);
+                    // Notice: No color/size words in spoken confirmation to prevent speaker echo loops; keeps Croatian sample preview on screen
+                    speakMeditationLine('Preview updated.', null, 150, 450, 'KEEP_CURRENT', 'calm');
+                } else {
+                    applySubtitleSettings(null, null, true);
+                    speakMeditationLine('Choose color or size.', null, 150, 450, 'KEEP_CURRENT', 'calm');
+                }
+                return;
+            }
+
+            // 4. Minimalist Start Confirmation when awaiting "When can I start?"
+            if (!isRunning && (checkInState === 'ASK_WHEN_TO_START' || /\b(start now|begin now|ready|go ahead|let s start|kreni)\b/i.test(norm))) {
+                const secMatch = norm.match(/\b(\d+)\s*(second|seconds|sec|secs)\b/i);
+                let delaySec = 0;
+                if (secMatch) {
+                    delaySec = Math.min(30, Math.max(1, parseInt(secMatch[1], 10)));
+                } else if (/\bfive seconds\b/i.test(norm)) {
+                    delaySec = 5;
+                } else if (/\bten seconds\b/i.test(norm)) {
+                    delaySec = 10;
+                }
+
+                if (/\b(now|start|begin|ready|yes|ok|okay|sure|go|seconds|sec)\b/i.test(norm)) {
+                    closeSubtitleSpecBar();
+                    launchMeditationAfterConfirmation(delaySec);
+                    return;
+                }
+            }
+
+            // 5. Minimalist Initial Greeting ("Hi" / "Hello" / "Hey")
+            if (!isRunning && /\b(hi|hello|hey|greetings|good morning|good evening|bok)\b/i.test(norm)) {
+                closeSubtitleSpecBar();
+                preparePostureAndAskWhenToStart();
+                return;
+            }
+        }
+
+        /***********************************************************************
+         * 9. MINIMALIST MEDITATION FLOW & GENTLY SLOWER PRE-MEDITATION VOICE
+         ***********************************************************************/
+        function clearDelayedStart() {
+            if (delayedStartTimer) {
+                clearInterval(delayedStartTimer);
+                delayedStartTimer = null;
+            }
+        }
+
+        // Minimal greeting + posture cue, spoken gently slower right before meditation
+        async function preparePostureAndAskWhenToStart() {
+            if (isRunning || isTransitioningToStart) return;
+            isTransitioningToStart = true;
+            isHandlingVoiceReply = true;
+
+            clearDelayedStart();
+            await initZenAudio();
+            playBowlChime('E5');
+
+            const instr = document.getElementById('breath-instruction');
+            if (instr) instr.textContent = 'RELAX SHOULDERS...';
+
+            speakMeditationLine(
+                'Hi. Relax your shoulders and hands... When can I start?',
+                () => {
+                    isTransitioningToStart = false;
+                    isHandlingVoiceReply = false;
+                    checkInState = 'ASK_WHEN_TO_START';
+                    setTerminalContextBadge('AWAIT_START');
+                    setTerminalPromptStream('listening for "Now"...');
+
+                    const chips = document.getElementById('quick-start-chips');
+                    if (chips) {
+                        chips.classList.remove('hidden');
+                        chips.classList.add('flex');
+                    }
+                    if (instr) instr.textContent = 'SAY "NOW" TO START';
+                },
+                300,
+                450,
+                'Bok. Opustite ramena i ruke... Kada mogu krenuti?',
+                'pre_meditation'
+            );
+        }
+
+        async function launchMeditationAfterConfirmation(delaySeconds = 0) {
+            if (isRunning || isTransitioningToStart) return;
+            isTransitioningToStart = true;
+            isHandlingVoiceReply = true;
+            checkInState = 'NONE';
+            lastConversationTopic = 'NONE';
+
+            const chips = document.getElementById('quick-start-chips');
+            if (chips) {
+                chips.classList.add('hidden');
+                chips.classList.remove('flex');
+            }
+
+            clearDelayedStart();
+            await initZenAudio();
+            playBowlChime('G5');
+
+            const instr = document.getElementById('breath-instruction');
+
+            if (delaySeconds > 0) {
+                speakMeditationLine(
+                    `Starting in ${delaySeconds} seconds.`,
+                    () => {
+                        let left = delaySeconds;
+                        if (instr) instr.textContent = `STARTING IN ${left}S...`;
+                        delayedStartTimer = setInterval(() => {
+                            left--;
+                            if (left > 0) {
+                                if (instr) instr.textContent = `STARTING IN ${left}S...`;
+                            } else {
+                                clearDelayedStart();
+                                isTransitioningToStart = false;
+                                isHandlingVoiceReply = false;
+                                startTwoMinuteClock();
+                            }
+                        }, 1000);
+                    },
+                    250,
+                    350,
+                    `Krećemo za ${delaySeconds} sekundi.`,
+                    'pre_meditation'
+                );
+            } else {
+                speakMeditationLine(
+                    'Beginning now.',
+                    () => {
+                        isTransitioningToStart = false;
+                        isHandlingVoiceReply = false;
+                        startTwoMinuteClock();
+                    },
+                    250,
+                    450,
+                    'Krećemo.',
+                    'pre_meditation'
+                );
+            }
+        }
+
+        function startTwoMinuteClock() {
+            if (isCompleted || remainingSeconds <= 0) {
+                remainingSeconds = TOTAL_SECONDS;
+                MEDITATION_CUES.forEach(c => { c.triggered = false; });
+            }
+            isCompleted = false;
+            isRunning = true;
+            lastTickTime = performance.now();
+
+            setTerminalContextBadge('MEDITATION');
+            setTerminalPromptStream('session active // 2-minute guided breath...');
+            startAmbientPad();
+
+            const labelPlay = document.getElementById('label-play');
+            const iconPlay = document.getElementById('icon-play');
+            if (labelPlay) labelPlay.textContent = 'Pause';
+            if (iconPlay) iconPlay.className = 'ph-fill ph-pause text-xs text-amber-300';
+        }
+
+        async function toggleMeditationManual() {
+            await initZenAudio();
+            closeSubtitleSpecBar();
+
+            const chips = document.getElementById('quick-start-chips');
+            if (chips) chips.classList.add('hidden');
+
+            if (!isRunning) {
+                if (remainingSeconds === TOTAL_SECONDS && !isCompleted) {
+                    launchMeditationAfterConfirmation(0);
+                } else {
+                    startTwoMinuteClock();
+                }
+            } else {
+                isRunning = false;
+                stopAmbientPad();
+                const labelPlay = document.getElementById('label-play');
+                const iconPlay = document.getElementById('icon-play');
+                const instr = document.getElementById('breath-instruction');
+                if (labelPlay) labelPlay.textContent = 'Resume';
+                if (iconPlay) iconPlay.className = 'ph-fill ph-play text-xs text-sky-300';
+                if (instr) instr.textContent = 'PAUSED';
+                setTerminalContextBadge('PAUSED');
+            }
+        }
+
+        function resetMeditation() {
+            isRunning = false;
+            isCompleted = false;
+            isTransitioningToStart = false;
+            isHandlingVoiceReply = false;
+            isRobotSpeaking = false;
+            checkInState = 'NONE';
+            lastConversationTopic = 'NONE';
+            remainingSeconds = TOTAL_SECONDS;
+
+            if (activePreDelayTimer) clearTimeout(activePreDelayTimer);
+            if (activePostDelayTimer) clearTimeout(activePostDelayTimer);
+            if (speechFallbackTimer) clearTimeout(speechFallbackTimer);
+            if ('speechSynthesis' in window) {
+                try { window.speechSynthesis.cancel(); } catch (e) {}
+            }
+
+            clearDelayedStart();
+            stopAmbientPad();
+            MEDITATION_CUES.forEach(c => { c.triggered = false; });
+
+            closeSubtitleSpecBar();
+            const chips = document.getElementById('quick-start-chips');
+            if (chips) chips.classList.add('hidden');
+
+            showSubtitleText('');
+            updateTimerUI(TOTAL_SECONDS);
+
+            const labelPlay = document.getElementById('label-play');
+            const iconPlay = document.getElementById('icon-play');
+            const instr = document.getElementById('breath-instruction');
+            const badge = document.getElementById('phase-badge');
+            if (labelPlay) labelPlay.textContent = 'Start 2-Min';
+            if (iconPlay) iconPlay.className = 'ph-fill ph-play text-xs text-sky-300';
+            if (instr) instr.textContent = 'SAY "HI" TO BEGIN';
+            if (badge) badge.textContent = 'STANDBY // 02:00';
+
+            setTerminalContextBadge(micPermissionGranted ? 'READY' : 'STANDBY');
+            setTerminalPromptStream(micPermissionGranted ? 'listening for "Hi"...' : 'click "Allow Microphone" to start...');
+            logVoiceTerminal('RESET', 'session reset to 02:00', 'amber');
+            updateMicUI();
+        }
+
+        function toggleSound() {
+            soundEnabled = !soundEnabled;
+            const icon = document.getElementById('icon-sound');
+            if (icon) {
+                icon.className = soundEnabled
+                    ? 'ph-fill ph-speaker-high text-sm text-sky-300'
+                    : 'ph-fill ph-speaker-slash text-sm text-slate-500';
+            }
+            if (!soundEnabled) {
+                stopAmbientPad();
+                if ('speechSynthesis' in window) {
+                    try { window.speechSynthesis.cancel(); } catch (e) {}
+                }
+            } else if (isRunning) {
+                startAmbientPad();
+            }
+        }
+
+        function toggleFullScreen() {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen().catch(() => {});
+            } else {
+                document.exitFullscreen().catch(() => {});
+            }
+        }
+
+        function updateTimerUI(secondsVal) {
+            const s = Math.max(0, Math.ceil(secondsVal));
+            const mins = String(Math.floor(s / 60)).padStart(2, '0');
+            const secs = String(s % 60).padStart(2, '0');
+            const formatted = `${mins}:${secs}`;
+
+            const timerEl = document.getElementById('timer-display');
+            const phaseEl = document.getElementById('phase-badge');
+            const ring = document.getElementById('progress-ring');
+
+            if (timerEl) timerEl.textContent = formatted;
+            if (phaseEl && isRunning) phaseEl.textContent = `MEDITATING // ${formatted}`;
+
+            if (ring) {
+                const circumference = 603.18;
+                const progress = (TOTAL_SECONDS - secondsVal) / TOTAL_SECONDS;
+                ring.style.strokeDashoffset = String(circumference * progress);
+            }
+        }
+
+        /***********************************************************************
+         * 10. THREE.JS 3D SHIMMERING PIXELATED VOXEL ANDROID HEAD + 3D TILT
+         ***********************************************************************/
+        let scene, camera, renderer, headGroup, shimmerLight;
+        const skullVoxels = [];
+        const eyeVoxels = [];
+        const mouthVoxels = [];
+        const holoParticles = [];
+
+        let userRotX = 0;
+        let userRotY = 0;
+        let targetUserRotX = 0;
+        let targetUserRotY = 0;
+        let isDraggingOrb = false;
+        let prevPointerX = 0;
+        let prevPointerY = 0;
+
+        function initThreeScene() {
+            const container = document.getElementById('canvas-container');
+            if (!container) return;
+
+            const w = container.clientWidth || 380;
+            const h = container.clientHeight || 380;
+
+            scene = new THREE.Scene();
+
+            camera = new THREE.PerspectiveCamera(36, w / h, 0.1, 100);
+            camera.position.set(0, 0.15, 18.2);
+
+            renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+            renderer.setSize(w, h);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+            container.innerHTML = '';
+            container.appendChild(renderer.domElement);
+
+            // Lighting for iridescent voxel shimmer
+            const ambient = new THREE.AmbientLight(0xdbeafe, 0.72);
+            scene.add(ambient);
+
+            const keyLight = new THREE.DirectionalLight(0xe0f2fe, 1.15);
+            keyLight.position.set(8, 12, 14);
+            scene.add(keyLight);
+
+            const rimLight = new THREE.DirectionalLight(0x38bdf8, 0.9);
+            rimLight.position.set(-10, 4, -8);
+            scene.add(rimLight);
+
+            shimmerLight = new THREE.PointLight(0x67e8f9, 1.45, 28);
+            shimmerLight.position.set(5, 3, 9);
+            scene.add(shimmerLight);
+
+            buildVoxelAndroidHead();
+            setupOrbInteraction();
+
+            window.addEventListener('resize', onOrbResize);
+        }
+
+        function buildVoxelAndroidHead() {
+            headGroup = new THREE.Group();
+            scene.add(headGroup);
+
+            const voxelGeo = new THREE.BoxGeometry(0.86, 0.86, 0.86);
+
+            // Dark visor core inside head for depth
+            const coreMat = new THREE.MeshStandardMaterial({
+                color: 0x06101f,
+                roughness: 0.25,
+                metalness: 0.8
+            });
+            const visorCore = new THREE.Mesh(new THREE.BoxGeometry(6.8, 5.2, 5.4), coreMat);
+            visorCore.position.set(0, 0.3, 0.2);
+            headGroup.add(visorCore);
+
+            // Glowing inner energy heart
+            const innerCore = new THREE.Mesh(
+                new THREE.OctahedronGeometry(1.35, 0),
+                new THREE.MeshBasicMaterial({ color: 0x38bdf8, wireframe: true, transparent: true, opacity: 0.45 })
+            );
+            innerCore.position.set(0, 0.4, 0);
+            headGroup.add(innerCore);
+
+            // Sculpt 3D Voxel Android Cranium, Cheekplates, Jaw, Neck & Side Ear-Sensors
+            for (let x = -5; x <= 5; x++) {
+                for (let y = -6; y <= 6; y++) {
+                    for (let z = -4; z <= 4; z++) {
+                        // Ellipsoidal head sculpt
+                        const nx = x / 5.1;
+                        const ny = (y - 0.5) / 5.6;
+                        const nz = z / 4.3;
+                        const dist = nx * nx + ny * ny + nz * nz;
+
+                        const isNeck = (y >= -6 && y <= -4 && Math.abs(x) <= 2 && Math.abs(z) <= 2 && (Math.abs(x) === 2 || Math.abs(z) === 2));
+                        const isEarModule = (Math.abs(x) === 5 && y >= -1 && y <= 2 && z >= -1 && z <= 1);
+                        const isShell = (dist >= 0.58 && dist <= 1.03 && y >= -4);
+
+                        // Carve open visor window on front face so eyes & mouth sit cleanly in 3D recess
+                        const inVisorCutout = (z >= 3 && Math.abs(x) <= 3 && y >= -2 && y <= 2);
+
+                        if ((isShell && !inVisorCutout) || isNeck || isEarModule) {
+                            const baseColor = isEarModule ? new THREE.Color(0x38bdf8) : new THREE.Color(0xcbd5e1);
+                            const mat = new THREE.MeshPhysicalMaterial({
+                                color: baseColor,
+                                roughness: 0.22,
+                                metalness: 0.58,
+                                clearcoat: 0.9,
+                                clearcoatRoughness: 0.15
+                            });
+
+                            const m = new THREE.Mesh(voxelGeo, mat);
+                            m.position.set(x * 0.92, y * 0.92, z * 0.92);
+                            headGroup.add(m);
+
+                            skullVoxels.push({
+                                mesh: m,
+                                gx: x,
+                                gy: y,
+                                gz: z,
+                                isEar: isEarModule,
+                                phase: (x * 0.35) + (y * 0.28) + (z * 0.25)
+                            });
+                        }
+                    }
+                }
+            }
+
+            // Luminous Pixelated Eyes (Left & Right)
+            const eyeCoords = [
+                [-2.2, 1.3], [-1.3, 1.3], [-2.2, 0.45], [-1.3, 0.45],
+                [1.3, 1.3],  [2.2, 1.3],  [1.3, 0.45],  [2.2, 0.45]
+            ];
+            const eyeGeo = new THREE.BoxGeometry(0.76, 0.72, 0.45);
+            eyeCoords.forEach(([ex, ey]) => {
+                const eMat = new THREE.MeshBasicMaterial({ color: 0xbae6fd });
+                const em = new THREE.Mesh(eyeGeo, eMat);
+                em.position.set(ex, ey, 3.18);
+                headGroup.add(em);
+                eyeVoxels.push({ mesh: em, baseY: ey, baseScaleY: 1 });
+            });
+
+            // Pixelated Expressive Mouth Matrix
+            const mouthXs = [-1.8, -0.9, 0, 0.9, 1.8];
+            const mouthGeo = new THREE.BoxGeometry(0.72, 0.42, 0.42);
+            mouthXs.forEach((mx, idx) => {
+                const mMat = new THREE.MeshBasicMaterial({ color: 0x7dd3fc });
+                const mm = new THREE.Mesh(mouthGeo, mMat);
+                mm.position.set(mx, -1.25, 3.18);
+                headGroup.add(mm);
+                mouthVoxels.push({ mesh: mm, idx });
+            });
+
+            // Floating Iridescent Holo-Voxels Orbiting Around the Head
+            const holoGeo = new THREE.BoxGeometry(0.32, 0.32, 0.32);
+            for (let i = 0; i < 18; i++) {
+                const hMat = new THREE.MeshBasicMaterial({
+                    color: i % 2 === 0 ? 0x67e8f9 : 0xa5b4fc,
+                    transparent: true,
+                    opacity: 0.55
+                });
+                const hm = new THREE.Mesh(holoGeo, hMat);
+                const angle = (i / 18) * Math.PI * 2;
+                const radius = 6.2 + (i % 3) * 0.65;
+                const yOff = ((i % 5) - 2) * 1.4;
+                headGroup.add(hm);
+                holoParticles.push({ mesh: hm, angle, radius, yOff, speed: 0.25 + (i % 4) * 0.06 });
+            }
+        }
+
+        function setupOrbInteraction() {
+            const portal = document.getElementById('orb-portal');
+            if (!portal) return;
+
+            portal.addEventListener('pointerdown', (e) => {
+                isDraggingOrb = true;
+                prevPointerX = e.clientX;
+                prevPointerY = e.clientY;
+            });
+
+            window.addEventListener('pointermove', (e) => {
+                if (!isDraggingOrb) return;
+                const dx = e.clientX - prevPointerX;
+                const dy = e.clientY - prevPointerY;
+                prevPointerX = e.clientX;
+                prevPointerY = e.clientY;
+
+                targetUserRotY = Math.max(-0.75, Math.min(0.75, targetUserRotY + dx * 0.006));
+                targetUserRotX = Math.max(-0.45, Math.min(0.45, targetUserRotX + dy * 0.005));
+            });
+
+            window.addEventListener('pointerup', () => {
+                isDraggingOrb = false;
+            });
+        }
+
+        function onOrbResize() {
+            const container = document.getElementById('canvas-container');
+            if (!container || !renderer || !camera) return;
+            const w = container.clientWidth || 320;
+            const h = container.clientHeight || 320;
+            camera.aspect = w / h;
+            camera.updateProjectionMatrix();
+            renderer.setSize(w, h);
+        }
+
+        /***********************************************************************
+         * 11. ANIMATION LOOP (SHIMMER, 3D TILT/ROTATION, BREATHING & TIMER)
+         ***********************************************************************/
+        const clock = new THREE.Clock();
+        let lastTickTime = performance.now();
+        let nextBlinkAt = 2.5;
+        let blinkEndAt = 2.66;
+        const tmpColor = new THREE.Color();
+
+        function updateMeditationLogic(nowMs, elapsedSec) {
+            const breathInstr = document.getElementById('breath-instruction');
+            const halo = document.getElementById('breath-halo');
+
+            if (!isRunning) {
+                // Gentle idle pulse on outer halo
+                const idleScale = 1 + Math.sin(elapsedSec * 1.4) * 0.018;
+                if (halo) {
+                    halo.style.transform = `scale(${idleScale.toFixed(3)})`;
+                    halo.style.borderColor = 'rgba(56, 189, 248, 0.24)';
+                }
+                return 0.5;
+            }
+
+            const dt = (nowMs - lastTickTime) / 1000;
+            lastTickTime = nowMs;
+            remainingSeconds = Math.max(0, remainingSeconds - dt);
+            updateTimerUI(remainingSeconds);
+
+            // Trigger concise meditation cues (no midpoint interruption!)
+            for (const cue of MEDITATION_CUES) {
+                if (!cue.triggered && remainingSeconds <= cue.atRemaining && !isRobotSpeaking) {
+                    cue.triggered = true;
+                    speakMeditationLine(cue.en, null, 200, 450, cue.hr, 'meditation');
+                    break;
+                }
+            }
+
+            // Complete session calmly at 00:00
+            if (remainingSeconds <= 0) {
+                remainingSeconds = 0;
+                isRunning = false;
+                isCompleted = true;
+                updateTimerUI(0);
+                stopAmbientPad();
+                playBowlChime('C5');
+                setTimeout(() => playBowlChime('G5'), 650);
+
+                const labelPlay = document.getElementById('label-play');
+                const iconPlay = document.getElementById('icon-play');
+                const phaseBadge = document.getElementById('phase-badge');
+                if (labelPlay) labelPlay.textContent = 'Start Again';
+                if (iconPlay) iconPlay.className = 'ph-fill ph-play text-xs text-sky-300';
+                if (breathInstr) breathInstr.textContent = 'SESSION COMPLETE';
+                if (phaseBadge) phaseBadge.textContent = 'COMPLETE // 00:00';
+                setTerminalContextBadge('COMPLETE');
+
+                speakMeditationLine(
+                    'Session complete. Gently open your eyes.',
+                    () => {
+                        setTimeout(() => {
+                            if (!isRobotSpeaking && !isRunning) showSubtitleText('');
+                        }, 2600);
+                    },
+                    450,
+                    450,
+                    'Meditacija je završena. Nježno otvorite oči.',
+                    'meditation'
+                );
+                return 0.5;
+            }
+
+            // 10-second coherent breathing cycle (4s Inhale, 2s Hold, 4s Exhale)
+            const elapsedMeditation = TOTAL_SECONDS - remainingSeconds;
+            const cyclePos = elapsedMeditation % 10;
+            let breathFactor = 0.5;
+
+            if (cyclePos < 4) {
+                breathFactor = cyclePos / 4;
+                if (breathInstr) breathInstr.textContent = 'INHALE SLOWLY...';
+            } else if (cyclePos < 6) {
+                breathFactor = 1.0;
+                if (breathInstr) breathInstr.textContent = 'HOLD GENTLY...';
+            } else {
+                breathFactor = 1.0 - ((cyclePos - 6) / 4);
+                if (breathInstr) breathInstr.textContent = 'EXHALE SOFTLY...';
+            }
+
+            if (halo) {
+                const haloScale = 0.98 + breathFactor * 0.065;
+                halo.style.transform = `scale(${haloScale.toFixed(3)})`;
+                halo.style.borderColor = `rgba(56, 189, 248, ${(0.2 + breathFactor * 0.35).toFixed(2)})`;
+            }
+
+            return breathFactor;
+        }
+
+        function updateVoxelHeadAnimation(elapsed, breathFactor) {
+            if (!headGroup) return;
+
+            // Ease user drag back subtly when not dragging
+            if (!isDraggingOrb) {
+                targetUserRotX *= 0.992;
+                targetUserRotY *= 0.992;
+            }
+            userRotX += (targetUserRotX - userRotX) * 0.08;
+            userRotY += (targetUserRotY - userRotY) * 0.08;
+
+            // Continuous gentle 3D rotation & tilt across X, Y, Z so 3D depth is unmistakable
+            const autoYaw = Math.sin(elapsed * 0.55) * 0.30;
+            const autoPitch = Math.sin(elapsed * 0.38 + 0.9) * 0.11;
+            const autoRoll = Math.cos(elapsed * 0.44) * 0.075;
+
+            headGroup.rotation.y = autoYaw + userRotY;
+            headGroup.rotation.x = autoPitch + userRotX;
+            headGroup.rotation.z = autoRoll;
+            headGroup.position.y = Math.sin(elapsed * 1.15) * 0.24 + (breathFactor - 0.5) * 0.22;
+
+            // Orbiting point light for pearlescent clearcoat shimmer
+            if (shimmerLight) {
+                shimmerLight.position.x = Math.sin(elapsed * 0.9) * 9;
+                shimmerLight.position.y = Math.cos(elapsed * 0.65) * 6 + 2;
+            }
+
+            // Subtle iridescent color wave across skull voxels
+            for (let i = 0; i < skullVoxels.length; i++) {
+                const v = skullVoxels[i];
+                const wave = 0.5 + 0.5 * Math.sin(elapsed * 1.65 + v.phase);
+                if (v.isEar) {
+                    tmpColor.setHSL(0.53 + wave * 0.06, 0.85, 0.52 + wave * 0.14);
+                } else {
+                    // Pearlescent silver-cyan-indigo shimmer
+                    tmpColor.setHSL(0.55 + wave * 0.10, 0.28 + wave * 0.22, 0.72 + wave * 0.12);
+                }
+                v.mesh.material.color.copy(tmpColor);
+            }
+
+            // Natural blinking or serene closed eyes during active meditation
+            if (elapsed > blinkEndAt) {
+                nextBlinkAt = elapsed + 2.8 + Math.random() * 2.6;
+                blinkEndAt = nextBlinkAt + 0.15;
+            }
+            const isBlinking = (elapsed >= nextBlinkAt && elapsed <= blinkEndAt);
+            const targetEyeScaleY = isRunning ? 0.16 : (isBlinking ? 0.12 : 1.0);
+
+            eyeVoxels.forEach((ev) => {
+                ev.mesh.scale.y += (targetEyeScaleY - ev.mesh.scale.y) * 0.28;
+            });
+
+            // Voice-reactive mouth voxels + top voice equalizer bars
+            for (let i = 0; i < mouthVoxels.length; i++) {
+                const mv = mouthVoxels[i];
+                if (isRobotSpeaking) {
+                    const pulse = 0.65 + Math.abs(Math.sin(elapsed * 13.5 + mv.idx * 0.9)) * 1.65;
+                    mv.mesh.scale.y = pulse;
+                    mv.mesh.material.color.setHex(0x67e8f9);
+                } else {
+                    mv.mesh.scale.y += (0.55 - mv.mesh.scale.y) * 0.2;
+                    mv.mesh.material.color.setHex(0x7dd3fc);
+                }
+            }
+
+            if (isRobotSpeaking) {
+                for (let b = 1; b <= 5; b++) {
+                    const barEl = document.getElementById(`vb-${b}`);
+                    if (barEl) {
+                        const hPx = 5 + Math.round(Math.abs(Math.sin(elapsed * 12 + b * 1.1)) * 11);
+                        barEl.style.height = `${hPx}px`;
+                    }
+                }
+            }
+
+            // Floating holographic pixels around the head
+            holoParticles.forEach((hp) => {
+                const a = hp.angle + elapsed * hp.speed;
+                hp.mesh.position.set(
+                    Math.cos(a) * hp.radius,
+                    hp.yOff + Math.sin(elapsed * 1.4 + hp.angle) * 0.45,
+                    Math.sin(a) * hp.radius * 0.65
+                );
+                hp.mesh.rotation.x = elapsed * 0.8;
+                hp.mesh.rotation.y = elapsed * 1.1;
+            });
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+            const elapsed = clock.getElapsedTime();
+            const breathFactor = updateMeditationLogic(performance.now(), elapsed);
+            updateVoxelHeadAnimation(elapsed, breathFactor);
+            if (renderer && scene && camera) {
+                renderer.render(scene, camera);
+            }
+        }
+
+        /***********************************************************************
+         * 12. BOOTSTRAP ON WINDOW LOAD
+         ***********************************************************************/
+        window.onload = function () {
+            // Ensure initial subtitle variables are applied while subtitle box stays completely hidden
+            document.documentElement.style.setProperty('--sub-color', subtitleColor);
+            document.documentElement.style.setProperty('--sub-size', SUBTITLE_SIZE_MAP[subtitleSizeKey]);
+
+            initThreeScene();
+            onOrbResize();
+
+            // Unlock Tone.js audio cleanly on first user click or keydown
+            const unlockOnce = () => {
+                initZenAudio();
+                loadBrowserVoices();
+                window.removeEventListener('pointerdown', unlockOnce);
+                window.removeEventListener('keydown', unlockOnce);
+            };
+            window.addEventListener('pointerdown', unlockOnce, { passive: true });
+            window.addEventListener('keydown', unlockOnce, { passive: true });
+
+            bootMicrophoneOnLoad();
+            animate();
+        };
+    </script>
+</body>
+</html>
